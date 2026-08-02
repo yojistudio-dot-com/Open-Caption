@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Caption by YO JI STUDIO</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-window-frame">
+        <!-- 窗口标题栏 Titlebar -->
+        <header class="app-titlebar">
+            <div class="traffic-controls">
+                <span class="t-dot dot-red"></span>
+                <span class="t-dot dot-yellow"></span>
+                <span class="t-dot dot-green"></span>
+            </div>
+
+            <div class="app-title-text">
+                Open Caption <span class="by-text">by YO JI STUDIO</span>
+            </div>
+
+            <div class="app-status-pills">
+                <span class="pill pill-green" id="pillGpu">
+                    <span class="pill-dot"></span> <span id="txtGpu">GPU RTX 4070</span>
+                </span>
+                <span class="pill pill-blue" id="pillFfmpeg">
+                    <span class="pill-dot"></span> <span id="txtFfmpeg">FFmpeg Ready</span>
+                </span>
+                <span class="pill pill-purple" id="pillWhisper">
+                    <span class="pill-dot"></span> <span id="txtWhisper">Whisper large-v3</span>
+                </span>
+                <div class="lang-switch-group">
+                    <button class="lbtn active" data-lang="zh">中</button>
+                    <button class="lbtn" data-lang="en">EN</button>
+                    <button class="lbtn" data-lang="fr">FR</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 软件核心主体布局 -->
+        <div class="app-main-body">
+            <!-- 左侧边栏 Panel -->
+            <aside class="app-sidebar">
+                <div class="sidebar-section">
+                    <div class="sec-title" data-i18n="sec_engine">⚙️ AI 引擎配置</div>
+                    
+                    <div class="form-group">
+                        <label data-i18n="lbl_whisper_model">Whisper 模型</label>
+                        <select id="selModel" class="app-select">
+                            <option value="large-v3">large-v3 (高精度推荐)</option>
+                            <option value="large-v3-turbo">large-v3-turbo (极速高精)</option>
+                            <option value="medium">medium (均衡)</option>
+                            <option value="small">small (快速)</option>
+                            <option value="base">base (轻便)</option>
+                            <option value="tiny">tiny (微型)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="lbl_device">运行设备</label>
+                        <select id="selDevice" class="app-select">
+                            <option value="cuda">CUDA (GPU)</option>
+                            <option value="cpu">CPU 模式</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="lbl_compute">计算精度</label>
+                        <select id="selCompute" class="app-select">
+                            <option value="float16">float16</option>
+                            <option value="int8">int8</option>
+                            <option value="float32">float32</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <div class="sec-title" data-i18n="sec_task">⚙️ 转写与断句微调</div>
+
+                    <div class="form-group">
+                        <label data-i18n="lbl_task">处理任务</label>
+                        <div class="seg-controls">
+                            <button class="seg-btn active" data-task="transcribe" data-i18n="btn_transcribe">语音转写</button>
+                            <button class="seg-btn" data-task="translate" data-i18n="btn_translate">翻译为英文</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="lbl_lang">语种选择</label>
+                        <select id="selLang" class="app-select">
+                            <option value="" data-i18n="opt_auto">自动识别</option>
+                            <option value="zh">中文</option>
+                            <option value="en">英文</option>
+                            <option value="ja">日语</option>
+                            <option value="ko">韩语</option>
+                            <option value="fr">法语</option>
+                            <option value="de">德语</option>
+                            <option value="es">西班牙语</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group check-group">
+                        <input type="checkbox" id="chkVad" checked>
+                        <label for="chkVad" data-i18n="lbl_vad">✓ VAD 静音降噪</label>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="slider-row">
+                            <span data-i18n="lbl_min_silence">最小静音间隔</span>
+                            <span id="txtSilenceMs">600 ms</span>
+                        </div>
+                        <input type="range" id="rngSilence" min="200" max="1500" value="600" step="50" class="app-slider">
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="lbl_prompt">Prompt 提示词</label>
+                        <textarea id="txtPrompt" class="app-textarea" rows="2" placeholder="例如: 专有名词、行业术语或标点规范..." data-i18n-ph="ph_prompt">以下是普通话和英文的无缝对话，请添加标点符号，简体中文。</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label data-i18n="lbl_max_width">单行最大字数</label>
+                        <select id="selMaxWidth" class="app-select">
+                            <option value="35">35</option>
+                            <option value="25">25</option>
+                            <option value="45">45</option>
+                        </select>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 右侧主区 Panel -->
+            <main class="app-content">
+                <!-- 上部分两列: Dropzone + 任务队列 -->
+                <div class="top-row-grid">
+                    <!-- Dropzone 拖拽区 -->
+                    <div class="drop-zone-card" id="dropZone">
+                        <div class="layer-3d-icon">
+                            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <div class="drop-main-title" data-i18n="drop_title">拖拽视频或音频文件到这里</div>
+                        <div class="drop-sub-title" data-i18n="drop_subtitle">支持 MP4, MOV, WAV, MP3, M4A, FLAC 等格式</div>
+                        <input type="file" id="fileInput" multiple accept="video/*,audio/*" style="display:none;">
+                        <button class="btn-select-file" onclick="document.getElementById('fileInput').click()" data-i18n="btn_browse">选择文件</button>
+                    </div>
+
+                    <!-- 任务队列 -->
+                    <div class="queue-card">
+                        <div class="queue-header">
+                            <span><span data-i18n="lbl_queue">任务队列</span> <span class="q-badge" id="lblQueueCount">2</span></span>
+                            <button class="btn-clear" id="btnClearQueue" data-i18n="btn_clear">⟳ 清空</button>
+                        </div>
+                        <div class="queue-items" id="queueItems">
+                            <div class="q-item">
+                                <div class="q-icon">📹</div>
+                                <div class="q-details">
+                                    <div class="q-name">产品介绍视频.mp4</div>
+                                    <div class="q-meta">1.24 GB • MP4</div>
+                                </div>
+                            </div>
+                            <div class="q-item">
+                                <div class="q-icon">🎙️</div>
+                                <div class="q-details">
+                                    <div class="q-name">团队会议录音.wav</div>
+                                    <div class="q-meta">356 MB • WAV</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 开始按钮 -->
+                <button class="btn-cta-blue" id="btnStartRecognize" data-i18n="btn_start">
+                    ⚡ 开始 AI 智能识别与字幕生成
+                </button>
+
+                <!-- 实时识别 Card -->
+                <div class="live-recognize-panel">
+                    <div class="live-bar">
+                        <div class="live-title">
+                            <span class="glowing-dot"></span>
+                            <span data-i18n="lbl_live_recognizing">实时识别中...</span>
+                        </div>
+                        <div class="live-stats">
+                            <span class="stat-num" id="txtPercent">72%</span>
+                            <span><span data-i18n="lbl_elapsed">已用时</span> <b id="txtElapsed">01:32</b></span>
+                            <span><span data-i18n="lbl_remaining">预计剩余</span> <b id="txtRemaining">00:48</b></span>
+                        </div>
+                    </div>
+
+                    <!-- 音频动态波形 Visualizer -->
+                    <div class="audio-waveform-bars">
+                        <span class="w-bar" style="height: 35%;"></span>
+                        <span class="w-bar" style="height: 65%;"></span>
+                        <span class="w-bar" style="height: 85%;"></span>
+                        <span class="w-bar" style="height: 45%;"></span>
+                        <span class="w-bar" style="height: 75%;"></span>
+                        <span class="w-bar" style="height: 100%;"></span>
+                        <span class="w-bar" style="height: 60%;"></span>
+                        <span class="w-bar" style="height: 30%;"></span>
+                        <span class="w-bar" style="height: 80%;"></span>
+                        <span class="w-bar" style="height: 95%;"></span>
+                    </div>
+
+                    <!-- 实时字幕流 -->
+                    <div class="live-subtitle-list" id="liveSubtitleList">
+                        <div class="sub-row"><span class="time-tag">00:00:02</span> 大家好，欢迎来到 YO JI STUDIO 的 AI 字幕识别软件演示。</div>
+                        <div class="sub-row active-sub"><span class="time-tag">00:00:05</span> 今天我们来看看它的强大功能和简单易用的操作界面。</div>
+                        <div class="sub-row"><span class="time-tag">00:00:09</span> 支持多种格式导入，实时转写，精准高效。</div>
+                        <div class="sub-row"><span class="time-tag">00:00:12</span> 让我们开始体验吧！</div>
+                    </div>
+                </div>
+
+                <!-- 底部 Studio Tabs 工作区 -->
+                <div class="studio-tabs-panel">
+                    <div class="tabs-top-nav">
+                        <div class="tabs-nav-group">
+                            <button class="nav-tab active" data-pane="paneEdit" data-i18n="tab_edit">🖊 字幕编辑</button>
+                            <button class="nav-tab" data-pane="paneExport" data-i18n="tab_export">📄 导出字幕</button>
+                            <button class="nav-tab" data-pane="paneBurn" data-i18n="tab_burn">🎬 视频烧录</button>
+                            <button class="nav-tab" data-pane="paneBatch" data-i18n="tab_batch">📦 批量打包</button>
+                        </div>
+
+                        <div class="replace-bar-inline">
+                            <input type="text" id="inputSearch" placeholder="查找文本..." class="mini-inp" data-i18n-ph="ph_search">
+                            <input type="text" id="inputReplace" placeholder="替换为..." class="mini-inp" data-i18n-ph="ph_replace">
+                            <button class="btn-mini-action" id="btnReplaceAll" data-i18n="btn_replace_all">全部替换</button>
+                        </div>
+                    </div>
+
+                    <!-- Tab 1: 字幕编辑表格 -->
+                    <div class="tab-pane active" id="paneEdit">
+                        <div class="table-container">
+                            <table class="app-data-table" id="dataTable">
+                                <thead>
+                                    <tr>
+                                        <th width="45">#</th>
+                                        <th width="150" data-i18n="th_start">开始时间 ⏱</th>
+                                        <th width="150" data-i18n="th_end">结束时间 ⏱</th>
+                                        <th data-i18n="th_content">字幕内容</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>1</td>
+                                        <td>00:00:02,000</td>
+                                        <td>00:00:05,000</td>
+                                        <td>大家好，欢迎来到 YO JI STUDIO 的 AI 字幕识别软件演示。</td>
+                                    </tr>
+                                    <tr>
+                                        <td>2</td>
+                                        <td>00:00:05,000</td>
+                                        <td>00:00:09,000</td>
+                                        <td>今天我们来看看它的强大功能和简单易用的操作界面。</td>
+                                    </tr>
+                                    <tr>
+                                        <td>3</td>
+                                        <td>00:00:09,000</td>
+                                        <td>00:00:12,300</td>
+                                        <td>支持多种格式导入，实时转写，精准高效。</td>
+                                    </tr>
+                                    <tr>
+                                        <td>4</td>
+                                        <td>00:00:12,000</td>
+                                        <td>00:00:14,500</td>
+                                        <td>让我们开始体验吧！</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: 导出字幕 -->
+                    <div class="tab-pane" id="paneExport">
+                        <div class="btn-group-row">
+                            <button class="btn-exp" onclick="exportFormat('srt')" data-i18n="exp_srt">⬇️ 导出 .SRT 标准字幕</button>
+                            <button class="btn-exp" onclick="exportFormat('vtt')" data-i18n="exp_vtt">⬇️ 导出 .VTT Web 字幕</button>
+                            <button class="btn-exp" onclick="exportFormat('ass')" data-i18n="exp_ass">⬇️ 导出 .ASS 特效字幕</button>
+                        </div>
+                    </div>
+
+                    <!-- Tab 3: 视频烧录 -->
+                    <div class="tab-pane" id="paneBurn">
+                        <div class="burn-inline-group">
+                            <label><span data-i18n="lbl_font_size">字号</span>: <input type="number" value="22" id="burnSize" class="mini-inp" style="width:60px;"></label>
+                            <label><span data-i18n="lbl_font_color">文字颜色</span>: 
+                                <select id="burnColor" class="mini-inp">
+                                    <option value="&H00FFFFFF" data-i18n="color_white">白色</option>
+                                    <option value="&H0000FFFF" data-i18n="color_yellow">黄色</option>
+                                </select>
+                            </label>
+                            <button class="btn-mini-action" id="btnRunBurn" style="background:#007aff;" data-i18n="btn_start_burn">🔥 开始硬烧录 MP4</button>
+                        </div>
+                    </div>
+
+                    <!-- Tab 4: 批量打包 -->
+                    <div class="tab-pane" id="paneBatch">
+                        <button class="btn-exp" style="width:100%; text-align:center;" onclick="downloadZip()" data-i18n="btn_download_zip">🎁 一键下载全套字幕打包 (.ZIP)</button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <footer class="app-window-footer">
+            © 2026 YO JI STUDIO • Open Source Subtitle Studio
+        </footer>
+    </div>
+
+    <script src="main.js"></script>
+</body>
+</html>
