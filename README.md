@@ -62,7 +62,7 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/Open-Caption.git
+git clone https://github.com/yojistudio-dot-com/Open-Caption
 cd Open-Caption
 
 # 启动容器 (自动挂载模型缓存)
